@@ -1,0 +1,345 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+import random
+import time
+import itertools
+from collections import defaultdict
+
+# ═══════════════════════════════════════════════════════════════════════════
+#                        AULA 01: RASTRIGIN + BUSCA ALEATÓRIA
+# ═══════════════════════════════════════════════════════════════════════════
+print("\n" + "="*80)
+print("AULA 01: FUNÇÃO RASTRIGIN E BUSCA ALEATÓRIA (MONTE CARLO)")
+print("="*80)
+
+def rastrigin_2d(x, y):
+    """
+    Função Rastrigin 2D - Benchmark clássico em otimização.
+    
+    Características:
+    - Múltiplos mínimos locais espalhados pelo domínio
+    - Apenas 1 mínimo global em (0, 0)
+    - Desafiadora para algoritmos de otimização simples
+    
+    Fórmula: f(x,y) = 20 + (x² - 10·cos(2π·x)) + (y² - 10·cos(2π·y))
+    
+    Domínio típico: [-5.12, 5.12] x [-5.12, 5.12]
+    Mínimo Global: (0, 0) com f(0,0) = 0
+    """
+    termo_x = x**2 - 10 * np.cos(2 * np.pi * x)
+    termo_y = y**2 - 10 * np.cos(2 * np.pi * y)
+    return 20 + termo_x + termo_y
+
+
+def visualizar_rastrigin():
+    """
+    Visualiza a função Rastrigin em 3D e mapa de contorno.
+    Mostra a complexidade da superfície e múltiplos mínimos locais.
+    """
+    print("\n📊 Visualizando Função Rastrigin...")
+    
+    x = np.linspace(-5.12, 5.12, 300)
+    y = np.linspace(-5.12, 5.12, 300)
+    X, Y = np.meshgrid(x, y)
+    Z = rastrigin_2d(X, Y)
+    
+    fig = plt.figure(figsize=(15, 5))
+    
+    # Figura 1: 3D
+    ax1 = fig.add_subplot(131, projection='3d')
+    surf = ax1.plot_surface(X, Y, Z, cmap='viridis', alpha=0.8, 
+                            linewidth=0, antialiased=True)
+    ax1.scatter([0], [0], [0], color='red', s=200, marker='*', 
+                label='Mínimo Global')
+    ax1.set_xlabel('X', fontsize=10)
+    ax1.set_ylabel('Y', fontsize=10)
+    ax1.set_zlabel('f(x,y)', fontsize=10)
+    ax1.set_title('Função Rastrigin - Superfície 3D', fontsize=12, fontweight='bold')
+    ax1.legend()
+    fig.colorbar(surf, ax=ax1, shrink=0.5, aspect=10)
+    
+    # Figura 2: Mapa de Contorno
+    ax2 = fig.add_subplot(132)
+    contour = ax2.contourf(X, Y, Z, levels=50, cmap='viridis')
+    ax2.contour(X, Y, Z, levels=20, colors='white', alpha=0.3, linewidths=0.5)
+    ax2.scatter([0], [0], color='red', s=200, marker='*', label='Mínimo Global')
+    ax2.set_xlabel('X', fontsize=10)
+    ax2.set_ylabel('Y', fontsize=10)
+    ax2.set_title('Mapa de Contorno', fontsize=12, fontweight='bold')
+    ax2.legend()
+    fig.colorbar(contour, ax=ax2)
+    
+    # Figura 3: Corte 1D
+    ax3 = fig.add_subplot(133)
+    x_1d = np.linspace(-5.12, 5.12, 1000)
+    z_1d = rastrigin_2d(x_1d, 0)
+    ax3.plot(x_1d, z_1d, 'b-', linewidth=2, label='f(x, 0)')
+    ax3.scatter([0], [0], color='red', s=200, marker='*', label='Mínimo Global')
+    ax3.set_xlabel('X', fontsize=10)
+    ax3.set_ylabel('f(x, 0)', fontsize=10)
+    ax3.set_title('Corte 1D (y=0)', fontsize=12, fontweight='bold')
+    ax3.grid(True, alpha=0.3)
+    ax3.legend()
+    
+    plt.tight_layout()
+    plt.show()
+    
+    print("✓ Visualização completa da função Rastrigin")
+    return X, Y, Z
+
+
+def busca_aleatoria_rastrigin(iteracoes=10000, dominio=(-5.12, 5.12)):
+    """
+    Implementa Busca Aleatória (Monte Carlo) para minimizar Rastrigin.
+    
+    ESTRATÉGIA:
+    - Gera N pontos completamente aleatórios no domínio
+    - Avalia cada ponto
+    - Mantém registro do melhor ponto encontrado
+    - Sem nenhuma inteligência ou memória entre tentativas
+    
+    PROBLEMA:
+    - Altamente ineficiente para funções complexas
+    - A qualidade da solução melhora muito lentamente
+    - Necessita de MUITO tempo computacional
+    
+    QUANDO USAR:
+    - Baseline para comparar outros métodos
+    - Quando nenhuma informação sobre a função é conhecida
+    - Para problemas muito pequenos
+    """
+    print(f"\n🔄 Executando Busca Aleatória ({iteracoes} iterações)...")
+    
+    inicio = time.time()
+    melhor_x = None
+    melhor_y = None
+    melhor_valor = float('inf')
+    historico = []
+    
+    for i in range(iteracoes):
+        x = random.uniform(dominio[0], dominio[1])
+        y = random.uniform(dominio[0], dominio[1])
+        valor = rastrigin_2d(x, y)
+        
+        if valor < melhor_valor:
+            melhor_valor = valor
+            melhor_x = x
+            melhor_y = y
+        
+        if i % (iteracoes // 20) == 0:  # 20 pontos no histórico
+            historico.append((i, melhor_valor, melhor_x, melhor_y))
+    
+    fim = time.time()
+    tempo = fim - inicio
+    
+    print(f"   ✓ Melhor valor encontrado: {melhor_valor:.6f}")
+    print(f"   ✓ Coordenadas: ({melhor_x:.4f}, {melhor_y:.4f})")
+    print(f"   ✓ Erro (distância do ótimo): {melhor_valor:.6f}")
+    print(f"   ✓ Tempo: {tempo:.4f}s")
+    
+    return melhor_x, melhor_y, melhor_valor, historico, tempo
+
+
+def plotar_convergencia_aleatoria(historico):
+    """Plota convergência da busca aleatória."""
+    if not historico:
+        return
+    
+    iteracoes = [h[0] for h in historico]
+    valores = [h[1] for h in historico]
+    
+    plt.figure(figsize=(10, 5))
+    plt.plot(iteracoes, valores, 'b-o', linewidth=2, markersize=6, label='Melhor valor')
+    plt.axhline(y=0, color='r', linestyle='--', linewidth=2, label='Ótimo Global')
+    plt.xlabel('Iterações', fontsize=12)
+    plt.ylabel('Melhor Valor Encontrado', fontsize=12)
+    plt.title('Convergência da Busca Aleatória na Função Rastrigin', fontsize=14, fontweight='bold')
+    plt.legend(fontsize=11)
+    plt.grid(True, alpha=0.3)
+    plt.yscale('log')
+    plt.tight_layout()
+    plt.show()
+
+
+# Executar AULA 01
+print("\n PARTE 1: Visualização da Função Rastrigin")
+X, Y, Z = visualizar_rastrigin()
+
+print("\n PARTE 2: Busca Aleatória")
+melhor_x, melhor_y, melhor_valor, historico, tempo = busca_aleatoria_rastrigin(iteracoes=10000)
+plotar_convergencia_aleatoria(historico)
+
+print("\n" + "-"*80)
+print("ANÁLISE DA AULA 01:")
+print("-"*80)
+print("""
+✗ CONCLUSÕES SOBRE BUSCA ALEATÓRIA:
+
+1. MUITO INEFICIENTE: Mesmo com 10.000 tentativas, não encontra o ótimo (0, 0)
+2. CONVERGÊNCIA LENTA: Melhora logarítmica - precisa de 10x mais iterações 
+   para melhorar significativamente
+3. NÃO ESCALÁVEL: Para 3D, 4D... a função fica exponencialmente mais difícil
+4. SEM EXPLORAÇÃO INTELIGENTE: Não "aprende" nada durante a busca
+
+QUANDO USAR: Apenas como baseline/comparação ou em casos triviais
+
+ MOTIVAÇÃO PARA ALGORITMOS MAIS SOFISTICADOS:
+   - Heurísticas Construtivas (Greedy/Gulosa)
+   - Algoritmos Evolucionários (Genéticos)
+   - Métodos de Descida Local (Hill Climbing)
+   - Metaheurísticas (Simulated Annealing, Tabu Search, PSO, etc)
+""")
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+#             AULA 02 - LAB 01: PROBLEMA DA MOCHILA (KNAPSACK)
+# ═══════════════════════════════════════════════════════════════════════════
+
+print("\n" + "="*80)
+print("AULA 02 - LAB 01: PROBLEMA DA MOCHILA (KNAPSACK)")
+print("="*80)
+
+def mochila_forca_bruta(pesos, valores, capacidade):
+    """
+    Resolve o Problema da Mochila 0/1 por FORÇA BRUTA.
+    
+    CONCEITO:
+    - Testa TODAS as possíveis combinações de itens
+    - Para n itens: 2^n combinações possíveis
+    - Encontra garantidamente a solução ótima
+    
+    COMPLEXIDADE: O(2^n) - EXPONENCIAL - impraticável para n > 20
+    
+    EXEMPLO: n=10 -> 1024 combinações | n=20 -> 1 milhão | n=30 -> 1 bilhão
+    
+    QUANDO USAR: Apenas para n pequeno (≤ 20) ou como "ground truth"
+    """
+    n = len(pesos)
+    melhor_valor = 0
+    melhor_combinacao = None
+    
+    total_combinacoes = 0
+    for comb in itertools.product([0, 1], repeat=n):
+        total_combinacoes += 1
+        peso_total = sum(pesos[i] for i in range(n) if comb[i] == 1)
+        
+        if peso_total <= capacidade:
+            valor_total = sum(valores[i] for i in range(n) if comb[i] == 1)
+            if valor_total > melhor_valor:
+                melhor_valor = valor_total
+                melhor_combinacao = comb
+    
+    return melhor_valor, melhor_combinacao, total_combinacoes
+
+
+def lab01_mochila():
+    """
+    LAB 01: Análise do crescimento exponencial no Problema da Mochila.
+    
+    PERGUNTAS:
+    1. Por que o total de soluções avaliadas é exatamente 32 para 5 itens?
+       → Resposta: 2^5 = 32 (cada item pode estar dentro ou fora)
+    
+    2. O que aconteceria se colocasse 15 itens?
+       → Resposta: 2^15 = 32.768 combinações (viável)
+                   2^20 = 1.048.576 (lento)
+                   2^25 = 33 milhões (muito lento)
+    
+    3. Problema da vida real parecido?
+       → Selecionar projetos com orçamento limitado
+       → Escolher produtos para compra com limite de peso
+       → Selecionar características para instalar com limite de espaço
+    """
+    print("\n LAB 01: Análise do Crescimento Exponencial")
+    
+    print("\n🔬 Teste com 5 itens:")
+    pesos = [2, 3, 4, 5, 1]
+    valores = [10, 15, 20, 25, 5]
+    capacidade = 10
+    
+    valor_otimo, comb, total_avaliados = mochila_forca_bruta(pesos, valores, capacidade)
+    
+    print(f"   Itens testados: {total_avaliados} = 2^5")
+    print(f"   Valor ótimo: {valor_otimo}")
+    print(f"   Combinação: {comb}")
+    
+    print("\n Crescimento Exponencial com n:")
+    for n in [5, 10, 15, 20, 25]:
+        combinacoes = 2**n
+        print(f"   n={n:2d}: 2^{n:2d} = {combinacoes:>12,} combinações", end="")
+        if combinacoes > 1e6:
+            print(" ❌ IMPRATICÁVEL")
+        elif combinacoes > 1e4:
+            print(" ⚠️  LENTO")
+        else:
+            print(" ✓ OK")
+    
+    print("\n✓ LAB 01 completo!")
+
+
+lab01_mochila()
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+#          AULA 02 - LAB 02: TRAVELING SALESMAN PROBLEM (TSP)
+# ═══════════════════════════════════════════════════════════════════════════
+
+print("\n" + "="*80)
+print("AULA 02 - LAB 02: PROBLEMA DO CAIXEIRO VIAJANTE (TSP)")
+print("="*80)
+
+def gerar_matriz_distancia(n, seed=42):
+    """Gera matriz de distâncias aleatória para n cidades."""
+    np.random.seed(seed)
+    dist = np.random.randint(10, 100, size=(n, n))
+    for i in range(n):
+        dist[i][i] = 0
+        dist[i] = dist[i]  # Pode ou não ser simétrica
+    return dist
+
+
+def calcular_custo_rota(rota, dist):
+    """Calcula o custo total de uma rota no TSP."""
+    custo = 0
+    for i in range(len(rota) - 1):
+        custo += dist[rota[i]][rota[i+1]]
+    return custo
+
+
+def tsp_forca_bruta(dist):
+    """
+    Resolve TSP por força bruta (enumeração de todas as permutações).
+    
+    COMPLEXIDADE: O(n!) - ULTRA-EXPONENCIAL
+    
+    Exemplos de crescimento:
+    - 4 cidades: 3! = 6 rotas
+    - 5 cidades: 4! = 24 rotas
+    - 10 cidades: 9! = 362.880 rotas
+    - 12 cidades: 11! = 39 milhões
+    - 15 cidades: 14! = 87 bilhões 
+    
+    IMPRATICÁVEL para n > 12
+    """
+    n = len(dist)
+    cidades = list(range(n))
+    
+    melhor_rota = None
+    melhor_custo = float('inf')
+    total_avaliadas = 0
+    
+    # Gera todas as permutações começando de 0
+    for perm in itertools.permutations(range(1, n)):
+        total_avaliadas += 1
+        rota = [0] + list(perm) + [0]  # Volta ao ponto inicial
+        custo = calcular_custo_rota(rota, dist)
+        
+        if custo < melhor_custo:
+            melhor_custo = custo
+            melhor_rota = rota
+    
+    return melhor_rota, melhor_custo, total_avaliadas
+
+
+def lab02_tsp():
