@@ -1,0 +1,67 @@
+# resultados_aula — Relatório Final: PSO
+
+## 1. O que foi aprendido
+O **Particle Swarm Optimization (PSO)** é uma meta-heurística baseada em inteligência de enxame (*swarm intelligence*). No algoritmo, cada partícula representa um ponto no espaço de busca e mantém:
+* Um vetor de estado (posição e velocidade)
+* Sua melhor posição individual ($pBest$)
+* A melhor posição global do grupo ($gBest$)
+
+A cada iteração, a velocidade é atualizada combinando a inércia do movimento, um componente cognitivo (memória local) e um social (troca de informação com o enxame). Em seguida, a posição é atualizada com *clamping* para garantir que as partículas permaneçam dentro
+do *bounding box* do problema.
+
+> **Key Insight:** O $pBest$ evita que a partícula perca sua referência local, enquanto o $gBest$ puxa o grupo para a região mais promissora. O grande trunfo é calibrar essa dinâmica para equilibrar exploração (*exploration*) e refinamento (*exploitation*).
+
+---
+
+## 2. Experiência nas Missões
+
+| Missão | Resultado | Avaliação |
+| :--- | :--- | :---: |
+| **1 — Partícula solitária** | Convergiu perto do mínimo em 20 iterações | `Médio` |
+| **2 — O enxame** | Convergiu no mínimo global da função de Rosenbrock | `Médio` |
+| **3 — Logística** | Otimizou a alocação de 5 hubs para 50 endpoints | `Difícil` |
+| **4 — Parâmetros** | Benchmark de 6 setups de hiperparâmetros (5 runs/config) | `Médio` |
+
+* **Missão 1:** Com apenas uma partícula (`swarm_size = 1`), o componente social é nulo ($c_2 = 0$), transformando o movimento em uma busca estocástica individual.
+* **Missão 2:** A introdução do $gBest$ acelerou a convergência, mas a função de Rosenbrock ofereceu resistência devido ao seu vale estreito e não convexo, que achata o gradiente.
+* **Missão 3:** O *loss* final alcançado foi **16115.18**, com os 5 hubs corretamente alocados nas coordenadas do modelo.
+
+---
+
+## 3. Análise dos Parâmetros (*Hyperparameter Tuning*)
+
+A configuração com **melhor custo médio** foi a **Padrão** (17212.04), enquanto a **pior performance** foi registrada pelo setup **Mais Partículas** (18711.17).
+
+* **Inércia ($w$):** Controla o quanto da velocidade passada é mantida.
+  * $w$ **alto:** Favorece *exploration* (evita convergência precoce, mas pode gerar *overshoot*).
+  * $w$ **baixo:** Foca em *exploitation* (melhora a precisão local, mas pode travar em mínimos locais).
+* **Coeficientes $c_1$ e $c_2$:** Ajustam a atração para o $pBest$ (cognitivo) e para o $gBest$ (social), respectivamente.
+* **Tamanho do enxame:** Amostra melhor o espaço de busca e reduz a variância dos testes, porém aumenta a complexidade computacional por iteração.
+
+> [!NOTE]
+> Como o PSO é estocástico, uma única execução não garante consistência. Para uso em produção, o ideal é rodar o setup **Padrão** com múltiplas *random seeds* para obter validação estatística.
+
+---
+
+## 4. Dificuldades e Conclusão
+
+Os principais gargalos no desenvolvimento do código foram:
+1. Vetorizar a equação da velocidade sem complicação de sintaxe ou estouro de limites.
+2. Tratar o estouro de limites (*boundary handling*) aplicando *clamping* nas posições.
+3. Fazer o *reshape* de um array 1D de 10 posições em 5 pares de coordenadas $(x, y)$.
+
+O experimento demonstrou que o PSO possui uma implementação simples, mas seu desempenho final é altamente dependente da geometria da *cost function*, do ajuste fino dos hiperparâmetros e do comportamento aleatório do enxame.
+
+---
+
+## 5. Arquivos Entregues
+
+```text
+.
+├── notebook.ipynb         # Pipeline completo das 4 missões
+├── parte_1_missao_1.md    # Detalhamento da Missão 1
+├── parte_2_missao_2.md    # Detalhamento da Missão 2
+├── parte_3_missao_3.md    # Detalhamento da Missão 3
+├── parte_4_missao_4.md    # Detalhamento da Missão 4
+└── README.md              # Relatório de consolidação (este arquivo)
+
