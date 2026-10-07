@@ -1,93 +1,95 @@
-# Objetivo: (1) comparar os dois formatos de função de pertinência,
-#           (2) testar o controlador com várias entradas,
-#           (3) ver a "superfície" que mostra todas as respostas possíveis.
-
-!pip install -q scikit-fuzzy
+Problema: RISCO DE EVASAO de um aluno a partir de FREQUENCIA (%) e DESEMPENHO (nota 0-10).
+Saida: risco de evasao (0-100 pontos).
 
 import os
 import numpy as np
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
 import skfuzzy as fuzz
 from skfuzzy import control as ctrl
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D  
-os.makedirs("imagens", exist_ok=True)
 
-x = np.arange(0, 10.01, 0.01)
+PASTA = os.path.join(os.path.dirname(os.path.abspath(__file__)), "imagens")
+os.makedirs(PASTA, exist_ok=True)
 
+frequencia = ctrl.Antecedent(np.arange(0, 100.1, 0.5), "frequencia")   # % de presenca
+desempenho = ctrl.Antecedent(np.arange(0, 10.01, 0.1), "desempenho")   # media das notas
+risco = ctrl.Consequent(np.arange(0, 100.1, 0.5), "risco")             # pontos 0-100
 
-tri_ruim  = fuzz.trimf(x, [0, 0, 5])
-tri_aceit = fuzz.trimf(x, [0, 5, 10])
-tri_exc   = fuzz.trimf(x, [5, 10, 10])
+# Extremos = trapezios (ombros), centro = triangulo
+frequencia["baixa"] = fuzz.trapmf(frequencia.universe, [0, 0, 55, 70])
+frequencia["media"] = fuzz.trimf(frequencia.universe, [60, 75, 90])
+frequencia["alta"] = fuzz.trapmf(frequencia.universe, [80, 90, 100, 100])
 
-trap_ruim  = fuzz.trapmf(x, [0, 0, 2, 4])
-trap_aceit = fuzz.trapmf(x, [2, 4, 6, 8])
-trap_exc   = fuzz.trapmf(x, [6, 8, 10, 10])
+desempenho["ruim"] = fuzz.trapmf(desempenho.universe, [0, 0, 3, 5])
+desempenho["regular"] = fuzz.trimf(desempenho.universe, [3.5, 5.5, 7.5])
+desempenho["bom"] = fuzz.trapmf(desempenho.universe, [6.5, 8, 10, 10])
 
-fig, (a1, a2) = plt.subplots(2, 1, figsize=(8, 6), sharex=True)
-for y, r in ((tri_ruim, "Ruim"), (tri_aceit, "Aceitável"), (tri_exc, "Excelente")):
-    a1.plot(x, y, label=r)
-a1.set_title("Serviço - funções triangulares")
-a1.legend()
-for y, r in ((trap_ruim, "Ruim"), (trap_aceit, "Aceitável"), (trap_exc, "Excelente")):
-    a2.plot(x, y, label=r)
-a2.set_title("Serviço - funções trapezoidais")
-a2.legend()
-for a in (a1, a2):
-    a.set_ylabel("Pertinência")
-a2.set_xlabel("Nota do serviço (0 a 10)")
-plt.tight_layout()
-plt.savefig("imagens/lab03_tri_vs_trap.png", dpi=150)
-plt.show()
-
-qualidade = ctrl.Antecedent(np.arange(0, 11, 1), "qualidade")
-servico   = ctrl.Antecedent(np.arange(0, 11, 1), "servico")
-gorjeta   = ctrl.Consequent(np.arange(0, 26, 1), "gorjeta")
-
-qualidade.automf(3, names=["ruim", "razoavel", "otima"])
-servico.automf(3,   names=["ruim", "aceitavel", "excelente"])
-gorjeta["baixa"] = fuzz.trimf(gorjeta.universe, [0, 0, 13])
-gorjeta["media"] = fuzz.trimf(gorjeta.universe, [0, 13, 25])
-gorjeta["alta"]  = fuzz.trimf(gorjeta.universe, [13, 25, 25])
+risco["baixo"] = fuzz.trapmf(risco.universe, [0, 0, 15, 35])
+risco["medio"] = fuzz.trimf(risco.universe, [25, 50, 75])
+risco["alto"] = fuzz.trapmf(risco.universe, [65, 85, 100, 100])
 
 regras = [
-    ctrl.Rule(servico["excelente"] | qualidade["otima"], gorjeta["alta"]),
-    ctrl.Rule(servico["aceitavel"],                      gorjeta["media"]),
-    ctrl.Rule(servico["ruim"] & qualidade["ruim"],       gorjeta["baixa"]),
+    ctrl.Rule(frequencia["baixa"] & desempenho["ruim"], risco["alto"]),
+    ctrl.Rule(frequencia["baixa"] & desempenho["regular"], risco["alto"]),
+    ctrl.Rule(frequencia["baixa"] & desempenho["bom"], risco["medio"]),
+    ctrl.Rule(frequencia["media"] & desempenho["ruim"], risco["alto"]),
+    ctrl.Rule(frequencia["media"] & desempenho["regular"], risco["medio"]),
+    ctrl.Rule(frequencia["media"] & desempenho["bom"], risco["baixo"]),
+    ctrl.Rule(frequencia["alta"] & desempenho["ruim"], risco["medio"]),
+    ctrl.Rule(frequencia["alta"] & (desempenho["regular"] | desempenho["bom"]), risco["baixo"]),
 ]
 sistema = ctrl.ControlSystem(regras)
-sim = ctrl.ControlSystemSimulation(sistema)
-
-# Cada par é (qualidade, serviço). Escolhi casos nos extremos e no meio
-# para ver se a saída faz sentido: piores notas -> gorjeta baixa,
-# melhores notas -> gorjeta alta.
-
-casos = [(0, 0), (2, 3), (5, 5), (6.5, 9.8), (10, 10)]
-print("qualidade | servico | gorjeta (%)")
-for q, s in casos:
-    sim.input["qualidade"] = q
-    sim.input["servico"]   = s
-    sim.compute()                       
-    print(f"{q:9} | {s:7} | {sim.output['gorjeta']:.2f}")
-
-xs = np.arange(1, 11, 1)
-ys = np.arange(1, 11, 1)
-X, Y = np.meshgrid(xs, ys)             
-Z = np.zeros_like(X, dtype=float)      
 
 
-for i in range(X.shape[0]):
-    for j in range(X.shape[1]):
-        sim.input["qualidade"] = X[i, j]
-        sim.input["servico"]   = Y[i, j]
-        sim.compute()
-        Z[i, j] = sim.output["gorjeta"]
+def calcular(freq, nota):
+    sim = ctrl.ControlSystemSimulation(sistema)
+    sim.input["frequencia"] = freq
+    sim.input["desempenho"] = nota
+    sim.compute()
+    return sim
 
-fig = plt.figure(figsize=(8, 6))
-ax = fig.add_subplot(111, projection="3d")
-ax.plot_surface(X, Y, Z, cmap="viridis", linewidth=0.4, antialiased=True)
-ax.set_xlabel("Qualidade da comida")
-ax.set_ylabel("Serviço")
-ax.set_zlabel("Gorjeta (%)")
-ax.set_title("Superfície de controle fuzzy")
-plt.savefig("imagens/lab03_superficie.png", dpi=150)
-plt.show()
+
+CASOS = [
+    ("Aluno exemplar",            95, 9.0, "baixo"),
+    ("Falta muito e vai mal",     30, 2.0, "alto"),
+    ("Assiduo, mas notas ruins",  92, 3.0, "medio"),
+    ("Medio em tudo",             75, 5.5, "medio"),
+    ("Falta muito, notas boas",   40, 8.5, "medio"),
+    ("Frequencia media, bom",     75, 8.5, "baixo"),
+]
+
+
+def rotulo(v):
+    return "baixo" if v < 35 else ("medio" if v < 65 else "alto")
+
+
+if __name__ == "__main__":
+    print(f"{'Situacao':28s} {'freq':>5s} {'nota':>5s} {'risco':>7s} {'obtido':>7s} {'esperado':>8s}")
+    for nome, f, n, esp in CASOS:
+        s = calcular(f, n)
+        r = s.output["risco"]
+        print(f"{nome:28s} {f:5.0f} {n:5.1f} {r:7.1f} {rotulo(r):>7s} {esp:>8s}  {'OK' if rotulo(r)==esp else 'DIVERGE'}")
+
+    frequencia.view(); plt.gcf().savefig(f"{PASTA}/lab03_frequencia.png", dpi=110, bbox_inches="tight")
+    desempenho.view(); plt.gcf().savefig(f"{PASTA}/lab03_desempenho.png", dpi=110, bbox_inches="tight")
+    risco.view();      plt.gcf().savefig(f"{PASTA}/lab03_risco.png", dpi=110, bbox_inches="tight")
+
+    s = calcular(75, 5.5)
+    risco.view(sim=s); plt.gcf().savefig(f"{PASTA}/lab03_agregacao_75_5.5.png", dpi=110, bbox_inches="tight")
+    s = calcular(40, 8.5)
+    risco.view(sim=s); plt.gcf().savefig(f"{PASTA}/lab03_agregacao_40_8.5.png", dpi=110, bbox_inches="tight")
+
+    fx = np.arange(0, 100.1, 5); ny = np.arange(0, 10.01, 0.5)
+    X, Y = np.meshgrid(fx, ny)
+    Z = np.zeros_like(X)
+    sim = ctrl.ControlSystemSimulation(sistema)
+    for i in range(X.shape[0]):
+        for j in range(X.shape[1]):
+            sim.input["frequencia"] = X[i, j]; sim.input["desempenho"] = Y[i, j]
+            sim.compute(); Z[i, j] = sim.output["risco"]
+    fig = plt.figure(figsize=(8, 6)); ax = fig.add_subplot(111, projection="3d")
+    ax.plot_surface(X, Y, Z, cmap="viridis", edgecolor="none")
+    ax.set_xlabel("Frequencia (%)"); ax.set_ylabel("Desempenho (nota)"); ax.set_zlabel("Risco (0-100)")
+    ax.view_init(30, 235)
+    fig.savefig(f"{PASTA}/lab03_superficie.png", dpi=110, bbox_inches="tight")
+    plt.show()
