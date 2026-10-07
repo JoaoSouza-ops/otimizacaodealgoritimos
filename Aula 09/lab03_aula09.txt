@@ -9,8 +9,7 @@ import numpy as np
 import skfuzzy as fuzz
 from skfuzzy import control as ctrl
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D  # necessário para o gráfico 3D (projection="3d")
-
+from mpl_toolkits.mplot3d import Axes3D  
 os.makedirs("imagens", exist_ok=True)
 
 x = np.arange(0, 10.01, 0.01)
@@ -61,6 +60,7 @@ sim = ctrl.ControlSystemSimulation(sistema)
 # Cada par é (qualidade, serviço). Escolhi casos nos extremos e no meio
 # para ver se a saída faz sentido: piores notas -> gorjeta baixa,
 # melhores notas -> gorjeta alta.
+
 casos = [(0, 0), (2, 3), (5, 5), (6.5, 9.8), (10, 10)]
 print("qualidade | servico | gorjeta (%)")
 for q, s in casos:
@@ -71,8 +71,8 @@ for q, s in casos:
 
 xs = np.arange(1, 11, 1)
 ys = np.arange(1, 11, 1)
-X, Y = np.meshgrid(xs, ys)             # meshgrid cria todas as combinações (x, y)
-Z = np.zeros_like(X, dtype=float)      # matriz que vai guardar a gorjeta de cada combinação
+X, Y = np.meshgrid(xs, ys)             
+Z = np.zeros_like(X, dtype=float)      
 
 
 for i in range(X.shape[0]):
