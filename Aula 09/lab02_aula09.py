@@ -1,55 +1,47 @@
-# Mesma regra do pip atividade 1
-import subprocess, sys
-try:
-    import skfuzzy
-except ImportError:
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "-q", "scikit-fuzzy"])
-    import skfuzzy
+!pip install numpy matplotlib scikit-fuzzy
 
-import os
 import numpy as np
-import skfuzzy as fuzz
-from skfuzzy import control as ctrl   
 import matplotlib.pyplot as plt
+import skfuzzy as fuzz
+from skfuzzy import control as ctrl
 
-os.makedirs("imagens", exist_ok=True)
+servico = ctrl.Antecedent(np.arange(0, 10.01, 0.1), "servico")   # nota 0-10
+comida = ctrl.Antecedent(np.arange(0, 10.01, 0.1), "comida")     # nota 0-10
+gorjeta = ctrl.Consequent(np.arange(0, 25.01, 0.5), "gorjeta")   # % da conta
 
-qualidade = ctrl.Antecedent(np.arange(0, 11, 1), "qualidade")
-servico   = ctrl.Antecedent(np.arange(0, 11, 1), "servico")
-gorjeta   = ctrl.Consequent(np.arange(0, 26, 1), "gorjeta")
-
-
-qualidade.automf(3, names=["ruim", "razoavel", "otima"])
-servico.automf(3,   names=["ruim", "aceitavel", "excelente"])
-
+for var in (servico, comida):
+    var["ruim"] = fuzz.trimf(var.universe, [0, 0, 5])
+    var["medio"] = fuzz.trimf(var.universe, [0, 5, 10])
+    var["bom"] = fuzz.trimf(var.universe, [5, 10, 10])
 
 gorjeta["baixa"] = fuzz.trimf(gorjeta.universe, [0, 0, 13])
 gorjeta["media"] = fuzz.trimf(gorjeta.universe, [0, 13, 25])
-gorjeta["alta"]  = fuzz.trimf(gorjeta.universe, [13, 25, 25])
+gorjeta["alta"] = fuzz.trimf(gorjeta.universe, [13, 25, 25])
+
+regras = [
+    ctrl.Rule(servico["ruim"] | comida["ruim"], gorjeta["baixa"]),
+    ctrl.Rule(servico["medio"], gorjeta["media"]),
+    ctrl.Rule(servico["bom"] | comida["bom"], gorjeta["alta"]),
+]
+
+sistema = ctrl.ControlSystem(regras)
+sim = ctrl.ControlSystemSimulation(sistema)
 
 
-regra1 = ctrl.Rule(servico["excelente"] | qualidade["otima"], gorjeta["alta"])
-regra2 = ctrl.Rule(servico["aceitavel"],                      gorjeta["media"])
-regra3 = ctrl.Rule(servico["ruim"] & qualidade["ruim"],       gorjeta["baixa"])
+def pedir_nota(texto, padrao):
+    """Lê uma nota de 0 a 10; se o aluno só apertar Enter, usa o padrão."""
+    resposta = input(f"{texto} (0-10) [{padrao}]: ").strip()
+    return float(resposta.replace(",", ".")) if resposta else padrao
 
 
-sistema_gorjeta = ctrl.ControlSystem([regra1, regra2, regra3])
-simulador = ctrl.ControlSystemSimulation(sistema_gorjeta)
+sim.input["servico"] = pedir_nota("Nota do serviço", 7)
+sim.input["comida"] = pedir_nota("Nota da comida", 3)
+sim.compute()
+print(f"\n=> Gorjeta sugerida: {sim.output['gorjeta']:.1f}%")
 
 
-simulador.input["qualidade"] = 6.5
-simulador.input["servico"]   = 9.8
-
-simulador.compute()
-
-resultado = simulador.output["gorjeta"]
-print(f"Gorjeta recomendada: {resultado:.2f}%")
-
-
-qualidade.view(sim=simulador)
-plt.savefig("imagens/lab02_qualidade.png", dpi=150)
-servico.view(sim=simulador)
-plt.savefig("imagens/lab02_servico.png", dpi=150)
-gorjeta.view(sim=simulador)
-plt.savefig("imagens/lab02_gorjeta.png", dpi=150)
+servico.view()           
+comida.view()             
+gorjeta.view(sim=sim)          
 plt.show()
+
