@@ -1,10 +1,10 @@
-#Resultados da Aula 12
+# Resultados da Aula 12
 
-#===EXERCÍCIO 1: Compra de Servidores Cloud
+# ===EXERCÍCIO 1: Compra de Servidores Cloud
 
 <img width="627" height="393" alt="image" src="https://github.com/user-attachments/assets/14ccee78-56ac-434a-9ba3-1af1a13807d9" />
 
-#=== EXERCÍCIO 2 ===
+# === EXERCÍCIO 2 ===
 Soluções na fronteira: 30
  Analistas  Regimento      Custo      Tempo
       1.01       1.01     151.60     247.16
@@ -42,7 +42,7 @@ Soluções na fronteira: 30
 
 
 
-#=== EXERCÍCIO 3 ===
+# === EXERCÍCIO 3 ===
 Soluções na fronteira: 40
 Melhor Tempo: vel=80.0, carga=1.24 -> tempo=12.50, custo=702.02, CO2=96.74
 Melhor Custo: vel=10.0, carga=1.00 -> tempo=100.00, custo=60.00, CO2=15.00
@@ -52,12 +52,12 @@ Melhor CO2  : vel=10.0, carga=5.00 -> tempo=100.00, custo=260.00, CO2=3.00
 <img width="500" height="507" alt="image" src="https://github.com/user-attachments/assets/8babe436-a01d-4692-8b6d-46bc1374af68" />
 
 
-#=== EXERCÍCIO 4 ===
+# === EXERCÍCIO 4 ===
 Soluções: 40 | risco 0.00 a 27.00 | retorno 0.00 a 26.00
 
 <img width="609" height="393" alt="image" src="https://github.com/user-attachments/assets/d2696f46-cf93-4ba8-9e5c-2ee213bb436b" />
 
-#=== EXERCÍCIO 5 ===
+# === EXERCÍCIO 5 ===
 
 Soluções na fronteira: 30
 prof= 30.0  árvores= 199.9  erro=0.0072  latência=105.95 ms
@@ -97,7 +97,7 @@ prof=  1.0  árvores=  10.0  erro=0.4963  latência=5.20 ms
 
 
 
-#=== EXERCÍCIO 6 ===
+# === EXERCÍCIO 6 ===
 Soluções viáveis: 40
  Potência    Temp  Recarga(min)   Desgaste         G
    150.00   15.00         20.00    1377.85   -122.15
